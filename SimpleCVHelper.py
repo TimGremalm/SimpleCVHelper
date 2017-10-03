@@ -4,11 +4,11 @@ from picamera import PiCamera
 from SimpleCV import Image
 from numpy import rot90
 import math
-import time
 
 def tableImages(imageList, numCols=0, outWidth=0, outHeight=0):
 	numImages = len(imageList)
 	if numCols == 0:
+		#A rough number of how many coloms could fit, if the images are equal in size this should work fine
 		numCols = math.ceil(math.sqrt(numImages))
 
 	imgCount = 0
@@ -25,11 +25,30 @@ def tableImages(imageList, numCols=0, outWidth=0, outHeight=0):
 				rows = currentRow
 			else:
 				rows = rows.sideBySide(currentRow, side='bottom')
-	if outWidth == 0:
+	if outWidth == 0: #Check args, otherwise take the first image size
 		outWidth = imageList[0].width
 	if outHeight == 0:
 		outHeight = imageList[0].height
-	print('{} {}'.format(outWidth, outHeight))
 
-	return(rows.adaptiveScale((outWidth, outHeight), fit=True))
+	#Get the output scaling
+	imgX, imgY = scaleSize(rows.width, rows.height, outWidth, outHeight)
+
+	return(rows.resize(imgX, imgY))
+
+def scaleSize(inputX, inputY, outputX, outputY):
+	ratioXY = float(inputX) / float(inputY)
+	ratioYX = float(inputY) / float(inputX)
+
+	#Create two sizes
+	sideAWidth = outputX
+	sidaAHeight = outputX*ratioYX
+
+	sideBWidth = outputY*ratioXY
+	sideBHeight = outputY
+
+	#Check which size will fit the output frame
+	if sidaAHeight <= outputY:
+		return(int(sideAWidth), int(sidaAHeight))
+	else:
+		return(int(sideBWidth), int(sideBHeight))
 
